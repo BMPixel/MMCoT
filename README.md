@@ -1,5 +1,17 @@
 # ScienceQA: Science Question Answering
 
+运行前配置：
+1. 下载图片： `bash tool/download.sh`
+2. 安装 Vlmeval： 
+```
+git clone https://github.com/open-compass/VLMEvalKit
+cd VLMEvalKit
+pip install -e .
+```
+
+# 以下是原仓库内容
+---
+
 ![VQA](https://img.shields.io/badge/Task-VQA-red) 
 ![Science Problems](https://img.shields.io/badge/Task-Scientific_Reasoning-red) 
 ![Open Domain](https://img.shields.io/badge/Task-Open--Domain-red) 

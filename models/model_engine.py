@@ -27,6 +27,9 @@ def auto_choose_model(model_name_or_path):
     if "blip" in model_name_or_path:
         print("Model not found in supported_VLM, detected as BLIP")
         return InstructBLIP
+    if "mplug" in model_name_or_path:
+        print("Model not found in supported_VLM, detected as mPLUG")
+        return mPLUG_Owl2
     raise ValueError(f"Unsupported model name: {model_name_or_path}")
 
 
@@ -38,11 +41,15 @@ def load_model(model_name_or_path, device_map="cuda", max_new_tokens=512):
         print(f"Set CUDA_VISIBLE_DEVICES to {device_id}")
 
     if model_name_or_path in supported_VLM:
-        return supported_VLM[model_name_or_path](max_new_tokens=max_new_tokens)
+        model = supported_VLM[model_name_or_path](max_new_tokens=max_new_tokens)
     else:
-        return auto_choose_model(model_name_or_path)(
+        model = auto_choose_model(model_name_or_path)(
             model_path=model_name_or_path, max_new_tokens=max_new_tokens
         )
+    if hasattr(model, "model"):
+        model.model = model.model.to(device_map)
+    
+    return model
 
 
 def extract_prediction(output, options):
@@ -62,13 +69,18 @@ def model_predict(model, prompt, options=["A", "B", "C", "D", "E"]):
     pattern = re.compile(r"\[\[IMG:.*?\]\]")
     all_imgs = pattern.findall(prompt)
 
+    if len(all_imgs) > 1 and not hasattr(model, "interleave_generate"):
+        raise ValueError(
+            f"Model {model} does not support multiple images. Please use a model that supports interleave_generate"
+        )
+
     input_list = []
     for img in all_imgs:
         idx = prompt.find(img)
         if not isimg(img[6:-2].strip()):
             print(f"Warning: {img} is not a valid image path")
             print(f"Current dir: {os.getcwd()}")
-    
+
         if idx > 0:
             input_list.append(prompt[:idx].strip())
             input_list.append(img[6:-2].strip())
@@ -93,7 +105,7 @@ def model_predict(model, prompt, options=["A", "B", "C", "D", "E"]):
         output = model.interleave_generate(input_list)
         output = cut_seq(output)
         seq_ret += "\n" + extractor + output
-    
+
     prediction = extract_prediction(output, options)
     return seq_ret, prediction
 
@@ -103,6 +115,10 @@ if __name__ == "__main__":
     Choice: (A) 0：4 (B) 4：0 (C) 2：2 (D) 1：3 (E) 3：1
     A: 让我们根据图片一步一步地思考。 [[因此，答案 (字母) 是]]"""
 
-    model = load_model(model_name_or_path="/cephfs/panwenbo/work/mmcot_assets/models/Qwen-VL", device_map="cuda:4", max_new_tokens=256)
+    model = load_model(
+        model_name_or_path="/cephfs/panwenbo/work/mmcot_assets/models/Qwen-VL",
+        device_map="cuda:4",
+        max_new_tokens=256,
+    )
 
     print(model_predict(model, prompt))
