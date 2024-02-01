@@ -1,5 +1,6 @@
-python run_gpt3.py \
---label exp1 \
+export PYTHONPATH=$PYTHONPATH:$(pwd)/..
+python run_vllm.py \
+--label test \
 --test_split test \
 --test_number -1 \
 --shot_number 2 \

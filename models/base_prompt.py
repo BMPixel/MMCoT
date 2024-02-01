@@ -1,100 +1,155 @@
+COT_STARTER = {
+    "ar": "لنفكر خطوة بخطوة.",
+    "bg": "Нека мислим стъпка по стъпка.",
+    "de": "Lassen Sie uns Schritt für Schritt denken.",
+    "el": "Ας σκεφτούμε βήμα βήμα.",
+    "en": "Let's think step by step.",
+    "es": "Pensemos paso a paso.",
+    "fr": "Réfléchissons étape par étape.",
+    "hi": "आइए कदम दर कदम सोचते हैं।",
+    "ru": "Давайте думать шаг за шагом.",
+    "sw": "Hebu tufikirie hatua kwa hatua.",
+    "th": "มาคิดกันทีละขั้นตอน.",
+    "tr": "Haydi adım adım düşünelim.",
+    "ur": "آئیے قدم بہ قدم سوچتے ہیں۔",
+    "vi": "Hãy suy nghĩ từng bước một.",
+    "zh-CN": "让我们一步一步地思考。",
+}
+
+ANSWER_EXTRACTOR = {
+    "ar": "وبالتالي، الإجابة {Options} هي",
+    "bg": "Следователно, отговорът {Options} е",
+    "de": "Daher ist die Antwort {Options}",
+    "el": "Επομένως, η απάντηση {Options} είναι",
+    "en": "Therefore, the answer {Options} is",
+    "es": "Por lo tanto, la respuesta {Options} es",
+    "fr": "Donc, la réponse {Options} est",
+    "hi": "इसलिए, उत्तर {Options} है",
+    "ru": "Таким образом, ответ {Options} является",
+    "sw": "Hivyo basi, jibu {Options} ni",
+    "th": "ดังนั้นคำตอบ {Options} คือ",
+    "tr": "Bu nedenle, cevap {Options}",
+    "ur": "لہذا، جواب {Options} ہے",
+    "vi": "Vì vậy, câu trả lời {Options} là",
+    "zh-CN": "因此，答案 {Options} 是",
+}
+
+
 def get_question_text(problem):
-    question = problem['question']
+    # Compatability with the translated dataset
+    if "translated_question" in problem:
+        question = problem["translated_question"]
+    else:
+        question = problem["question"]
     return question
 
 
 def get_context_text(problem, use_caption):
-    txt_context = problem['hint']
-    img_context = problem['caption'] if use_caption else ""
+    txt_context = problem["hint"]
+    img_context = problem["caption"] if use_caption else ""
     context = " ".join([txt_context, img_context]).strip()
     if context == "":
         context = "N/A"
     return context
 
 
-def get_choice_text(probelm, options):
-    choices = probelm['choices']
+def get_choice_text(problem, options):
+    # Compatability with the translated dataset
+    if "translated_choices" in problem:
+        choices = problem["translated_choices"]
+    else:
+        choices = problem["choices"]
     choice_list = []
     for i, c in enumerate(choices):
         choice_list.append("({}) {}".format(options[i], c))
     choice_txt = " ".join(choice_list)
-    #print(choice_txt)
+    # print(choice_txt)
     return choice_txt
 
 
+def get_options_text(problem, options):
+    if "translated_choices" in problem:
+        choices = problem["translated_choices"]
+    else:
+        choices = problem["choices"]
+    options = options[: len(choices)]
+    return "(" + ", ".join(options) + ")"
+
+
 def get_answer(problem, options):
-    return options[problem['answer']]
+    if "translated_answer" in problem:
+        return options[int(problem["translated_answer"])]
+    return options[problem["answer"]]
 
 
 def get_lecture_text(problem):
     # \\n: GPT-3 can generate the lecture with more tokens.
-    lecture = problem['lecture'].replace("\n", "\\n")
+    lecture = problem["lecture"].replace("\n", "\\n")
     return lecture
 
 
-def get_solution_text(problem):
+def get_solution_text(problem, translated=False):
     # \\n: GPT-3 can generate the solution with more tokens
-    solution = problem['solution'].replace("\n", "\\n")
+
+    if translated:
+        solution = problem["translated_solution"].replace("\n", "\\n")
+    else:
+        solution = problem["solution"].replace("\n", "\\n")
     return solution
 
 
-def create_one_example(format, question, context, choice, answer, lecture, solution, test_example=True):
+def create_one_example(
+    format,
+    language,
+    question,
+    context,
+    choice,
+    answer,
+    options,
+    solution,
+    test_example=True,
+):
+    cot_format, stages = format.split("-")
 
-    input_format, output_format = format.split("-")
+    input = f"Q: {question} [Image]\n Choice: {choice}\n"
 
-    ## Inputs
-    if input_format == "CQM":
-        input = f"Context: {context}\nQuestion: {question}\nOptions: {choice}\n"
-    elif input_format == "QCM":
-        input = f"Question: {question}\nContext: {context}\nOptions: {choice}\n"
-    # upper bound experiment
-    elif input_format == "QCML":
-        input = f"Question: {question}\nContext: {context}\nOptions: {choice}\nBECAUSE: {lecture}\n"
-    elif input_format == "QCME":
-        input = f"Question: {question}\nContext: {context}\nOptions: {choice}\nBECAUSE: {solution}\n"
-    elif input_format == "QCMLE":
-        input = f"Question: {question}\nContext: {context}\nOptions: {choice}\nBECAUSE: {lecture} {solution}\n"
+    if cot_format == "MCoT":
+        cot_starter = COT_STARTER[language]
+        answer_extractor = ANSWER_EXTRACTOR[language]
+    elif cot_format == "EnCoT":
+        cot_starter = COT_STARTER["en"]
+        answer_extractor = ANSWER_EXTRACTOR["en"]
+    elif cot_format == "Direct":
+        cot_starter = ""
+        answer_extractor = "The answer {Options} is"
+    else:
+        raise NotImplementedError
 
-    elif input_format == "QCLM":
-        input = f"Question: {question}\nContext: {context}\nBECAUSE: {lecture}\nOptions: {choice}\n"
-    elif input_format == "QCEM":
-        input = f"Question: {question}\nContext: {context}\nBECAUSE: {solution}\nOptions: {choice}\n"
-    elif input_format == "QCLEM":
-        input = f"Question: {question}\nContext: {context}\nBECAUSE: {lecture} {solution}\nOptions: {choice}\n"
+    answer_extractor = answer_extractor.replace("{Options}", options)
 
-    # Outputs
+    # use Two
     if test_example:
-        output = "Answer:"
-    elif output_format == 'A':
-        output = f"Answer: The answer is {answer}."
-
-    elif output_format == 'AL':
-        output = f"Answer: The answer is {answer}. BECAUSE: {solution}"
-    elif output_format == 'AE':
-        output = f"Answer: The answer is {answer}. BECAUSE: {lecture}"
-    elif output_format == 'ALE':
-        output = f"Answer: The answer is {answer}. BECAUSE: {lecture} {solution}"
-    elif output_format == 'AEL':
-        output = f"Answer: The answer is {answer}. BECAUSE: {solution} {lecture}"
-
-    elif output_format == 'LA':
-        output = f"Answer: {lecture} The answer is {answer}."
-    elif output_format == 'EA':
-        output = f"Answer: {solution} The answer is {answer}."
-    elif output_format == 'LEA':
-        output = f"Answer: {lecture} {solution} The answer is {answer}."
-    elif output_format == 'ELA':
-        output = f"Answer: {solution} {lecture} The answer is {answer}."
+        if stages == "Two":
+            output = f"A: {cot_starter} [[{answer_extractor}]]"
+        elif stages == "One":
+            if cot_format == "Direct":
+                output = f"A: {answer_extractor}"
+            else:
+                output = f"A: {cot_starter}"
+        else:
+            raise NotImplementedError
+    else:
+        if cot_format == "Direct":
+            output = f"A: {answer_extractor} {answer}."
+        else:
+            output = f"A: {cot_starter} {solution} {answer_extractor} {answer}."
 
     text = input + output
     text = text.replace("  ", " ").strip()
-    if text.endswith("BECAUSE:"):
-        text = text.replace("BECAUSE:", "").strip()
     return text
 
 
 def build_prompt(problems, shot_qids, test_qid, args):
-
     examples = []
 
     # n-shot training examples
@@ -103,17 +158,21 @@ def build_prompt(problems, shot_qids, test_qid, args):
         context = get_context_text(problems[qid], args.use_caption)
         choice = get_choice_text(problems[qid], args.options)
         answer = get_answer(problems[qid], args.options)
-        lecture = get_lecture_text(problems[qid])
-        solution = get_solution_text(problems[qid])
+        options = get_options_text(problems[qid], args.options)
+        translated = "M" in args.prompt_format
+        solution = get_solution_text(problems[qid], translated)
 
-        train_example = create_one_example(args.prompt_format,
-                                           question,
-                                           context,
-                                           choice,
-                                           answer,
-                                           lecture,
-                                           solution,
-                                           test_example=False)
+        train_example = create_one_example(
+            args.prompt_format,
+            args.language,
+            question,
+            context,
+            choice,
+            answer,
+            options,
+            solution,
+            test_example=False,
+        )
         examples.append(train_example)
 
     # test example
@@ -121,20 +180,23 @@ def build_prompt(problems, shot_qids, test_qid, args):
     context = get_context_text(problems[test_qid], args.use_caption)
     choice = get_choice_text(problems[test_qid], args.options)
     answer = get_answer(problems[test_qid], args.options)
-    lecture = get_lecture_text(problems[test_qid])
+    options = get_options_text(problems[test_qid], args.options)
     solution = get_solution_text(problems[test_qid])
 
-    test_example = create_one_example(args.prompt_format,
-                                      question,
-                                      context,
-                                      choice,
-                                      answer,
-                                      lecture,
-                                      solution,
-                                      test_example=True)
+    test_example = create_one_example(
+        args.prompt_format,
+        args.language,
+        question,
+        context,
+        choice,
+        answer,
+        options,
+        solution,
+        test_example=True,
+    )
     examples.append(test_example)
 
     # create the prompt input
-    prompt_input = '\n\n'.join(examples)
+    prompt_input = "\n\n".join(examples)
 
     return prompt_input
