@@ -3,10 +3,8 @@ import re
 import json
 import argparse
 import random
-from tqdm import tqdm
 from models.base_prompt import *
-from tools.generate_caption import predict_caption
-
+from models.model_engine import load_model, model_predict
 
 def load_data(args):
     language = args.language
@@ -14,13 +12,37 @@ def load_data(args):
         open(os.path.join(args.data_root, f"problems_{language}.json"))
     )
     pid_splits = json.load(open(os.path.join(args.data_root, "pid_splits.json")))
-    captions = json.load(open(args.caption_file))["captions"]
+    
+    # Add image path
+    pid_not_exist = []
+    pid_with_no_image = []
+    for split in ['train', 'test', 'val']:
+        for pid in pid_splits[split]:
+            if pid not in problems:
+                pid_not_exist.append(pid)
+                continue
+            if problems[pid]["image"]:
+                problems[pid]["image"] = os.path.join(
+                    args.data_root, "images", split, pid, problems[pid]["image"]
+                )
+                if not os.path.exists(problems[pid]["image"]):
+                    print(f"Image not found: {problems[pid]['image']}")
+            else:
+                pid_with_no_image.append(pid)
+    
+    # Remove problems not exist
+    print(f"Number of problems not exist: {len(pid_not_exist)}, total: {len(problems)}")
+    for split in ['train', 'test', 'val']:
+        pid_splits[split] = [pid for pid in pid_splits[split] if pid not in pid_not_exist]
 
-    for qid in problems:
-        problems[qid]["caption"] = captions[qid] if qid in captions else ""
+    # Remove problems with no image
+    print(f"Number of problems with no image: {len(pid_with_no_image)}, total: {len(problems) - len(pid_not_exist)}")
+    for split in ['train', 'test', 'val']:
+        pid_splits[split] = [pid for pid in pid_splits[split] if pid not in pid_with_no_image]
 
     qids = pid_splits["%s" % (args.test_split)]
     qids = qids[: args.test_number] if args.test_number > 0 else qids
+    
     print(f"number of test problems: {len(qids)}\n")
 
     # pick up shot examples from the training set
@@ -36,10 +58,6 @@ def load_data(args):
     print("training question ids for prompting: ", shot_qids, "\n")
 
     return problems, qids, shot_qids
-
-
-def get_gpt3_result(prompt, args):
-    raise NotImplementedError
 
 
 def get_pred_idx(prediction, choices, options):
@@ -107,7 +125,6 @@ def parse_args():
     )
     parser.add_argument("--data_root", type=str, default="../data/multi_lingual")
     parser.add_argument("--output_root", type=str, default="../results")
-    parser.add_argument("--caption_file", type=str, default="../data/captions.json")
     parser.add_argument("--options", type=list, default=["A", "B", "C", "D", "E"])
     # user options
     parser.add_argument("--label", type=str, default="exp0")
@@ -115,9 +132,6 @@ def parse_args():
         "--test_split", type=str, default="val", choices=["test", "val", "minival"]
     )
     parser.add_argument("--test_number", type=int, default=-1)
-    parser.add_argument(
-        "--use_caption", action="store_true", help="use image captions or not"
-    )
     parser.add_argument(
         "--save_every",
         type=int,
@@ -153,9 +167,6 @@ def parse_args():
         help="The maximum number of tokens allowed for the generated answer.",
     )
     parser.add_argument("--device-map", type=str, default="cuda:0", help="device map")
-    parser.add_argument(
-        "--batch-size", type=int, default=32, help="batch size used for inference"
-    )
 
     args = parser.parse_args()
     return args
@@ -171,6 +182,8 @@ if __name__ == "__main__":
     problems, qids, shot_qids = load_data(
         args
     )  # probelms, test question ids, shot example ids
+    
+    model = load_model(args.model, args.device_map, args.max_tokens)
 
     result_file = get_result_file(args)
 

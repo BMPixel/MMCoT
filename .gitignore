@@ -1,4 +1,5 @@
 data/scienceqa/images
+data/multi_lingual/images
 saved_models/
 
 *.zip

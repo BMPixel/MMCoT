@@ -17,23 +17,22 @@ COT_STARTER = {
 }
 
 ANSWER_EXTRACTOR = {
-    "ar": "وبالتالي، الإجابة {Options} هي",
-    "bg": "Следователно, отговорът {Options} е",
-    "de": "Daher ist die Antwort {Options}",
-    "el": "Επομένως, η απάντηση {Options} είναι",
-    "en": "Therefore, the answer {Options} is",
-    "es": "Por lo tanto, la respuesta {Options} es",
-    "fr": "Donc, la réponse {Options} est",
-    "hi": "इसलिए, उत्तर {Options} है",
-    "ru": "Таким образом, ответ {Options} является",
-    "sw": "Hivyo basi, jibu {Options} ni",
-    "th": "ดังนั้นคำตอบ {Options} คือ",
-    "tr": "Bu nedenle, cevap {Options}",
-    "ur": "لہذا، جواب {Options} ہے",
-    "vi": "Vì vậy, câu trả lời {Options} là",
-    "zh-CN": "因此，答案 {Options} 是",
+    "en": "Therefore, the answer (English alphabet) is",
+    "ar": "لذلك، الإجابة (أبجدية إنجليزية) هي",
+    "bg": "Следователно, отговорът (английската азбука) е",
+    "de": "Daher ist die Antwort (Englisches Alphabet) ist",
+    "el": "Επομένως, η απάντηση (Αγγλικό αλφάβητο) είναι",
+    "es": "Por lo tanto, la respuesta (alfabeto inglés) es",
+    "fr": "Par conséquent, la réponse (alphabet anglais) est",
+    "hi": "इसलिए, उत्तर (अंग्रेजी वर्णमाला) है",
+    "ru": "Таким образом, ответ (английский алфавит) есть",
+    "sw": "Hivyo, jibu (alfabeti ya Kiingereza) ni",
+    "th": "ดังนั้นคำตอบ (อักษรภาษาอังกฤษ) คือ",
+    "tr": "Bu nedenle, cevap (İngiliz alfabesi) şudur",
+    "ur": "لہذا، جواب (انگریزی حروف تہجی) ہے",
+    "vi": "Do đó, câu trả lời (bảng chữ cái tiếng Anh) là",
+    "zh-CN": "因此，答案（英文字母）是",
 }
-
 
 def get_question_text(problem):
     # Compatability with the translated dataset
@@ -44,13 +43,9 @@ def get_question_text(problem):
     return question
 
 
-def get_context_text(problem, use_caption):
-    txt_context = problem["hint"]
-    img_context = problem["caption"] if use_caption else ""
-    context = " ".join([txt_context, img_context]).strip()
-    if context == "":
-        context = "N/A"
-    return context
+def get_context_text(problem):
+    txt_context = problem["image"]
+    return txt_context
 
 
 def get_choice_text(problem, options):
@@ -111,7 +106,7 @@ def create_one_example(
 ):
     cot_format, stages = format.split("-")
 
-    input = f"Q: {question} [Image]\n Choice: {choice}\n"
+    input = f"Q: {question} [[IMG: {context}]]\n Choice: {choice}\n"
 
     if cot_format == "MCoT":
         cot_starter = COT_STARTER[language]
@@ -155,7 +150,7 @@ def build_prompt(problems, shot_qids, test_qid, args):
     # n-shot training examples
     for qid in shot_qids:
         question = get_question_text(problems[qid])
-        context = get_context_text(problems[qid], args.use_caption)
+        context = get_context_text(problems[qid])
         choice = get_choice_text(problems[qid], args.options)
         answer = get_answer(problems[qid], args.options)
         options = get_options_text(problems[qid], args.options)
@@ -177,7 +172,7 @@ def build_prompt(problems, shot_qids, test_qid, args):
 
     # test example
     question = get_question_text(problems[test_qid])
-    context = get_context_text(problems[test_qid], args.use_caption)
+    context = get_context_text(problems[test_qid])
     choice = get_choice_text(problems[test_qid], args.options)
     answer = get_answer(problems[test_qid], args.options)
     options = get_options_text(problems[test_qid], args.options)
