@@ -16,8 +16,8 @@ for lang in "${languages[@]}"; do
     --test_split test \
     --test_number 100 \
     --shot_number 3 \
-    --model /cephfs/panwenbo/work/mmcot_assets/models/mplug-owl2-llama2-7b \
-    --device-map cuda:4 \
+    --model XComposer2 \
+    --device-map cuda:3 \
     --prompt_format MCoT-One \
     --seed 3
 done

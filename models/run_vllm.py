@@ -71,10 +71,11 @@ def get_pred_idx(prediction, choices, options):
 
 
 def get_result_file(args):
-    result_file = "{}/{}/{}_{}_{}_{}_seed_{}.json".format(
+    result_file = "{}/{}/{}_{}_{}_{}_{}_seed_{}.json".format(
         args.output_root,
         args.model.split("/")[-1],
         args.label,
+        args.language,
         args.test_split,
         args.prompt_format,
         args.shot_number,
