@@ -4,7 +4,7 @@ import json
 import argparse
 import random
 from models.base_prompt import *
-from models.model_engine import load_model, model_predict
+from models.model_engine import load_model, model_predict, extract_prediction
 
 def load_data(args):
     language = args.language
@@ -163,7 +163,7 @@ def parse_args():
     parser.add_argument(
         "--max_tokens",
         type=int,
-        default=512,
+        default=256,
         help="The maximum number of tokens allowed for the generated answer.",
     )
     parser.add_argument("--device-map", type=str, default="cuda:0", help="device map")
@@ -216,8 +216,7 @@ if __name__ == "__main__":
         # generate prediction
         # prediction, output = get_gpt3_result(prompt, args)  # 'A', ..., 'E'
         # some mock data for test
-        prediction = "A"
-        output = "Because, some people are not able to see the color red."
+        output, prediction = model_predict(model, prompt, args.options)
         pred_idx = get_pred_idx(prediction, choices, args.options)  # 0, 1, ..., 4
 
         results[qid] = pred_idx
@@ -227,7 +226,7 @@ if __name__ == "__main__":
 
         acc = correct / len(results) * 100
 
-        if args.debug or i < 3:
+        if args.debug or i < 10:
             print("##################################")
             print(prompt, "\n")
             print("# labeled answer:", label)

@@ -6,7 +6,7 @@ import os
 
 
 def cut_seq(seq, by=["\n\n", "Q:"]):
-    min_idx = -1
+    min_idx = len(seq)
     for b in by:
         idx = seq.find(b)
         if idx != -1:
@@ -19,10 +19,13 @@ def cut_seq(seq, by=["\n\n", "Q:"]):
 def auto_choose_model(model_name_or_path):
     model_name_or_path = model_name_or_path.lower()
     if "llava" in model_name_or_path:
+        print("Model not found in supported_VLM, detected as LLaVA")
         return LLaVA
     if "qwen" in model_name_or_path:
+        print("Model not found in supported_VLM, detected as QwenVL")
         return QwenVL
     if "blip" in model_name_or_path:
+        print("Model not found in supported_VLM, detected as BLIP")
         return InstructBLIP
     raise ValueError(f"Unsupported model name: {model_name_or_path}")
 
@@ -32,6 +35,7 @@ def load_model(model_name_or_path, device_map="cuda", max_new_tokens=512):
         # get id:
         device_id = int(device_map.split(":")[1])
         os.environ["CUDA_VISIBLE_DEVICES"] = str(device_id)
+        print(f"Set CUDA_VISIBLE_DEVICES to {device_id}")
 
     if model_name_or_path in supported_VLM:
         return supported_VLM[model_name_or_path](max_new_tokens=max_new_tokens)
@@ -41,7 +45,19 @@ def load_model(model_name_or_path, device_map="cuda", max_new_tokens=512):
         )
 
 
-def model_predict(model, prompt):
+def extract_prediction(output, options):
+    # find the last occurence of option: A, B, C, D or E
+    last_choice = "FAIL"
+    last_idx = 0
+    for c in options:
+        idx = output.rfind(c)
+        if idx > last_idx:
+            last_choice = c
+            last_idx = idx
+    return last_choice
+
+
+def model_predict(model, prompt, options=["A", "B", "C", "D", "E"]):
     # Extract image
     pattern = re.compile(r"\[\[IMG:.*?\]\]")
     all_imgs = pattern.findall(prompt)
@@ -77,7 +93,9 @@ def model_predict(model, prompt):
         output = model.interleave_generate(input_list)
         output = cut_seq(output)
         seq_ret += "\n" + extractor + output
-    return seq_ret
+    
+    prediction = extract_prediction(output, options)
+    return seq_ret, prediction
 
 
 if __name__ == "__main__":
