@@ -4,8 +4,12 @@
 1. 下载图片： `bash tool/download.sh`
 2. 安装 Vlmeval： 
 ```
-git clone https://github.com/open-compass/VLMEvalKit
-cd VLMEvalKit
+cd libs/VLMEvalKit
+pip install -e .
+```
+3. --安装 mplug_owl2：GitHub里的文件完全不可用，从modelscope下载的-- 还是不可用
+```
+cd libs/mPLUG-Owl2
 pip install -e .
 ```
 
