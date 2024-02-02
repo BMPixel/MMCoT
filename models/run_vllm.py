@@ -41,6 +41,7 @@ def load_data(args):
         pid_splits[split] = [pid for pid in pid_splits[split] if pid not in pid_with_no_image]
 
     qids = pid_splits["%s" % (args.test_split)]
+    print(f"Total number of test problems: {len(qids)}")
     qids = qids[: args.test_number] if args.test_number > 0 else qids
     
     print(f"number of test problems: {len(qids)}\n")
@@ -144,7 +145,7 @@ def parse_args():
         "--prompt_format",
         type=str,
         default="EnCoT-One",
-        choices=["MCoT-One", "EnCoT-One", "MCoT-Two", "EnCoT-Two" "CodeSwitch-One", "CodeSwitch-Two", "Direct-One"],
+        choices=["MCoT-One", "EnCoT-One", "MCoT-Two", "EnCoT-Two", "CodeSwitch-One", "CodeSwitch-Two", "Direct-One"],
         help="prompt format template",
     )
     parser.add_argument(

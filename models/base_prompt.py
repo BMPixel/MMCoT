@@ -17,21 +17,21 @@ COT_STARTER = {
 }
 
 ANSWER_EXTRACTOR = {
-    "en": "Therefore, the answer (English alphabet) is",
-    "ar": "لذلك، الإجابة (أبجدية إنجليزية) هي",
-    "bg": "Следователно, отговорът (английската азбука) е",
-    "de": "Daher ist die Antwort (Englisches Alphabet) ist",
-    "el": "Επομένως, η απάντηση (Αγγλικό αλφάβητο) είναι",
-    "es": "Por lo tanto, la respuesta (alfabeto inglés) es",
-    "fr": "Par conséquent, la réponse (alphabet anglais) est",
-    "hi": "इसलिए, उत्तर (अंग्रेजी वर्णमाला) है",
-    "ru": "Таким образом, ответ (английский алфавит) есть",
-    "sw": "Hivyo, jibu (alfabeti ya Kiingereza) ni",
-    "th": "ดังนั้นคำตอบ (อักษรภาษาอังกฤษ) คือ",
-    "tr": "Bu nedenle, cevap (İngiliz alfabesi) şudur",
-    "ur": "لہذا، جواب (انگریزی حروف تہجی) ہے",
-    "vi": "Do đó, câu trả lời (bảng chữ cái tiếng Anh) là",
-    "zh-CN": "因此，答案（英文字母）是",
+    "en": "Therefore, the answer is",
+    "ar": "لذلك، الإجابة هي",
+    "bg": "Следователно, отговорът е",
+    "de": "Daher ist die Antwort ist",
+    "el": "Επομένως, η απάντηση είναι",
+    "es": "Por lo tanto, la respuesta es",
+    "fr": "Par conséquent, la réponse est",
+    "hi": "इसलिए, उत्तर है",
+    "ru": "Таким образом, ответ есть",
+    "sw": "Hivyo, jibu ni",
+    "th": "ดังนั้นคำตอบ คือ",
+    "tr": "Bu nedenle, cevap şudur",
+    "ur": "لہذا، جواب ہے",
+    "vi": "Do đó, câu trả lời là",
+    "zh-CN": "因此，答案是",
 }
 
 def get_question_text(problem):
